@@ -1,162 +1,95 @@
 import React, { useState } from 'react';
-import {
-  BookOpen,
-  Lightbulb,
-  Volume2,
-  Turtle,
-  CheckCircle2,
-  RotateCw,
-  Sparkles,
-  Play
-} from 'lucide-react';
+import { Volume2, RotateCw, Lightbulb } from 'lucide-react';
 import { sound } from '../utils/sound';
 
-export default function StudyHubMode({
-  levelData,
-  masteredWords,
-  onToggleMasteredWord,
-  onStartGameMode
-}) {
+export default function StudyHubMode({ levelData }) {
   const [subTab, setSubTab] = useState('vocab'); // 'vocab' | 'grammar'
-  const [flippedIds, setFlippedIds] = useState({});
+  const [flipped, setFlipped] = useState({});
 
-  const toggleFlip = (id) => {
+  const toggleCard = (id) => {
     sound.playFlip();
-    setFlippedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+    setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
-    <div className="space-y-6">
-      {/* Sub-navigation between Vocab Deck and Grammar Cards */}
-      <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-800/90 bg-slate-900/70 p-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 rounded-2xl bg-slate-950 p-1.5">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900 sm:p-7">
+      {/* Sub-Switch */}
+      <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
           <button
-            onClick={() => {
-              sound.playClick();
-              setSubTab('vocab');
-            }}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all sm:text-sm ${
+            onClick={() => setSubTab('vocab')}
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
               subTab === 'vocab'
-                ? `bg-gradient-to-r ${levelData.color} text-white shadow-md`
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-900 dark:text-indigo-400'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
-            <BookOpen className="h-4 w-4" />
-            <span>3D Kelime Kartları ({levelData.vocabList.length})</span>
+            Kelime Kartları ({levelData.vocabList.length})
           </button>
-
           <button
-            onClick={() => {
-              sound.playClick();
-              setSubTab('grammar');
-            }}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all sm:text-sm ${
+            onClick={() => setSubTab('grammar')}
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
               subTab === 'grammar'
-                ? `bg-gradient-to-r ${levelData.color} text-white shadow-md`
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-900 dark:text-indigo-400'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
-            <Lightbulb className="h-4 w-4" />
-            <span>Gramer Formül Rehberi ({levelData.grammarLessons.length})</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onStartGameMode(subTab === 'vocab' ? 'vocab_game' : 'sentence_builder')}
-            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-600/25 transition hover:bg-indigo-500"
-          >
-            <Play className="h-4 w-4 fill-current" />
-            <span>
-              {subTab === 'vocab' ? 'Kelime Oyununa Geç' : 'Cümle İnşaatçısını Oyna'}
-            </span>
+            Gramer Özeti ({levelData.grammarLessons.length})
           </button>
         </div>
       </div>
 
       {subTab === 'vocab' ? (
         <div>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-            <p>
-              💡 Kartların üzerine tıklayarak <strong className="text-slate-200">Türkçe anlamını ve örnek cümlesini</strong> görebilir, hoparlör ikonuyla <strong className="text-slate-200">İngilizce telaffuzunu</strong> dinleyebilirsiniz.
-            </p>
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-300">
-              Öğrenilen: {levelData.vocabList.filter((w) => masteredWords.includes(w.id)).length} / {levelData.vocabList.length}
-            </span>
-          </div>
+          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            Kartlara dokunarak Türkçe anlamını ve örnek cümlesini görebilirsiniz.
+          </p>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {levelData.vocabList.map((item) => {
-              const isFlipped = Boolean(flippedIds[item.id]);
-              const isMastered = masteredWords.includes(item.id);
-
+              const isFlipped = Boolean(flipped[item.id]);
               return (
                 <div
                   key={item.id}
-                  className="group relative h-72 cursor-pointer rounded-3xl border border-slate-800 bg-slate-900/90 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10"
-                  onClick={() => toggleFlip(item.id)}
+                  onClick={() => toggleCard(item.id)}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-indigo-400 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-indigo-500/50"
                 >
                   {!isFlipped ? (
-                    <div className="flex h-full flex-col justify-between">
+                    <div className="flex flex-col justify-between gap-3">
                       <div className="flex items-center justify-between">
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${levelData.badgeBg}`}>
+                        <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
                           {item.type}
                         </span>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => sound.speak(item.word, false)}
-                            className="rounded-xl bg-slate-800 p-2 text-slate-300 transition hover:bg-indigo-600 hover:text-white"
-                            title="Normal Hızda Telaffuz"
-                          >
-                            <Volume2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => sound.speak(item.word, true)}
-                            className="rounded-xl bg-slate-800 p-2 text-slate-300 transition hover:bg-amber-600 hover:text-white"
-                            title="Yavaş Telaffuz (Kaplumbağa Modu)"
-                          >
-                            <Turtle className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="my-auto text-center">
-                        <h3 className="font-display text-2xl font-bold tracking-wide text-white">
-                          {item.word}
-                        </h3>
-                        <p className="mt-1 font-mono text-xs text-slate-400">{item.phonetic}</p>
-                        <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-slate-800/90 px-3 py-1 text-[11px] text-slate-300">
-                          <span>Eş anlam:</span>
-                          <strong className="text-indigo-300">{item.synonym}</strong>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs">
-                        <span className="inline-flex items-center gap-1 text-slate-400 group-hover:text-indigo-300">
-                          <RotateCw className="h-3.5 w-3.5" />
-                          Anlamı için çevir
-                        </span>
-
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onToggleMasteredWord(item.id);
+                            sound.speak(item.word, false);
                           }}
-                          className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 font-bold transition ${
-                            isMastered
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                              : 'bg-slate-800 text-slate-400 hover:text-white'
-                          }`}
+                          className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                          title="Telaffuzu Dinle"
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>{isMastered ? 'Öğrendim' : 'İşaretle'}</span>
+                          <Volume2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         </button>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                          {item.word}
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {item.phonetic} • Eş anlam: {item.synonym}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                        <RotateCw className="h-3 w-3" />
+                        <span>Anlamı için dokun</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex h-full flex-col justify-between bg-gradient-to-b from-indigo-950/40 to-slate-900/40 rounded-2xl">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                           {item.word}
                         </span>
                         <button
@@ -164,36 +97,24 @@ export default function StudyHubMode({
                             e.stopPropagation();
                             sound.speak(item.example, false);
                           }}
-                          className="inline-flex items-center gap-1 rounded-xl bg-indigo-500/20 px-2.5 py-1 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/30"
+                          className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
                         >
-                          <Volume2 className="h-3.5 w-3.5" />
+                          <Volume2 className="h-3 w-3" />
                           Cümleyi Dinle
                         </button>
                       </div>
 
-                      <div className="my-auto space-y-3">
-                        <div>
-                          <div className="text-[11px] font-semibold uppercase text-slate-400">
-                            Türkçe Anlamı
-                          </div>
-                          <div className="mt-0.5 text-lg font-extrabold text-emerald-300">
-                            {item.tr}
-                          </div>
-                        </div>
+                      <p className="text-sm font-extrabold text-emerald-700 dark:text-emerald-400">
+                        {item.tr}
+                      </p>
 
-                        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3">
-                          <p className="text-xs font-semibold text-white">
-                            &ldquo;{item.example}&rdquo;
-                          </p>
-                          <p className="mt-1 text-[11px] text-slate-400">
-                            {item.exampleTr}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Ön yüze dönmek için tıkla</span>
-                        <RotateCw className="h-3.5 w-3.5" />
+                      <div className="rounded-xl bg-white p-2.5 text-xs dark:bg-slate-900">
+                        <p className="font-semibold text-slate-800 dark:text-slate-100">
+                          &ldquo;{item.example}&rdquo;
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                          {item.exampleTr}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -203,68 +124,44 @@ export default function StudyHubMode({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {levelData.grammarLessons.map((lesson, index) => (
+        <div className="space-y-4">
+          {levelData.grammarLessons.map((lesson) => (
             <div
               key={lesson.id}
-              className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl"
+              className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60 sm:p-5"
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className={`rounded-full border px-3 py-1 text-xs font-bold ${levelData.badgeBg}`}>
-                    Modül {index + 1} • {levelData.id} Gramer
-                  </span>
-                  <Sparkles className={`h-5 w-5 ${levelData.accentText}`} />
-                </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                {lesson.title}
+              </h3>
+              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                {lesson.trTitle}
+              </p>
 
-                <h3 className="mt-4 font-display text-xl font-bold text-white">
-                  {lesson.title}
-                </h3>
-                <p className="text-xs font-semibold text-indigo-400">{lesson.trTitle}</p>
-
-                {/* Formula Box */}
-                <div className="mt-4 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-3.5">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-                    📐 Altın Formül
-                  </div>
-                  <div className="mt-1 font-mono text-xs font-bold text-white">
-                    {lesson.formula}
-                  </div>
-                </div>
-
-                {/* Explanation */}
-                <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                  {lesson.explanation}
-                </p>
-
-                {/* Pro Tip */}
-                <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                    <Lightbulb className="h-4 w-4 text-amber-400" />
-                    <span>Püf Noktası (Pro Tip)</span>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-amber-100/90">
-                    {lesson.proTip}
-                  </p>
-                </div>
+              <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 font-mono text-xs font-bold text-indigo-900 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
+                {lesson.formula}
               </div>
 
-              {/* Examples */}
-              <div className="mt-5 space-y-2.5 border-t border-slate-800 pt-4">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Örnek Cümleler (Dinlemek İçin Tıkla)
-                </div>
+              <p className="mt-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300 sm:text-sm">
+                {lesson.explanation}
+              </p>
+
+              <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span>{lesson.proTip}</span>
+              </div>
+
+              <div className="mt-3 space-y-2">
                 {lesson.examples.map((ex, i) => (
                   <button
                     key={i}
                     onClick={() => sound.speak(ex.en, false)}
-                    className="w-full rounded-2xl border border-slate-800/90 bg-slate-950/70 p-3 text-left transition hover:border-indigo-500/40 hover:bg-slate-950"
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs transition hover:border-indigo-400 dark:border-slate-800 dark:bg-slate-900"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-bold text-white">{ex.en}</span>
-                      <Volume2 className="h-4 w-4 shrink-0 text-indigo-400" />
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">{ex.en}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">{ex.tr}</div>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">{ex.tr}</p>
+                    <Volume2 className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
                   </button>
                 ))}
               </div>
