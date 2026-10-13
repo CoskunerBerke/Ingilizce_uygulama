@@ -1,10 +1,34 @@
-import React, { useState } from 'react';
-import { Volume2, RotateCw, Lightbulb } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, RotateCw, Lightbulb, RefreshCw } from 'lucide-react';
 import { sound } from '../utils/sound';
+import { getExpandedVocabForLevel } from '../data/vocabBank';
 
 export default function StudyHubMode({ levelData }) {
   const [subTab, setSubTab] = useState('vocab'); // 'vocab' | 'grammar'
   const [flipped, setFlipped] = useState({});
+  const [visibleWords, setVisibleWords] = useState([]);
+  const deckRef = useRef([]);
+  const cursorRef = useRef(0);
+
+  const loadNextBatch = () => {
+    if (
+      deckRef.current.length === 0 ||
+      cursorRef.current + 8 > deckRef.current.length
+    ) {
+      deckRef.current = getExpandedVocabForLevel(levelData.id);
+      cursorRef.current = 0;
+    }
+    const batch = deckRef.current.slice(cursorRef.current, cursorRef.current + 8);
+    cursorRef.current += 8;
+    setVisibleWords(batch);
+    setFlipped({});
+  };
+
+  useEffect(() => {
+    deckRef.current = getExpandedVocabForLevel(levelData.id);
+    cursorRef.current = 0;
+    loadNextBatch();
+  }, [levelData.id]);
 
   const toggleCard = (id) => {
     sound.playFlip();
@@ -14,7 +38,7 @@ export default function StudyHubMode({ levelData }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900 sm:p-7">
       {/* Sub-Switch */}
-      <div className="mb-6 flex items-center justify-between gap-2">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
           <button
             onClick={() => setSubTab('vocab')}
@@ -24,7 +48,7 @@ export default function StudyHubMode({ levelData }) {
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
-            Kelime Kartları ({levelData.vocabList.length})
+            Kelime Kartları
           </button>
           <button
             onClick={() => setSubTab('grammar')}
@@ -34,19 +58,32 @@ export default function StudyHubMode({ levelData }) {
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
-            Gramer Özeti ({levelData.grammarLessons.length})
+            Gramer Özeti
           </button>
         </div>
+
+        {subTab === 'vocab' && (
+          <button
+            onClick={() => {
+              sound.playClick();
+              loadNextBatch();
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:border-indigo-400 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Yeni 8 Kelime Getir</span>
+          </button>
+        )}
       </div>
 
       {subTab === 'vocab' ? (
         <div>
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-            Kartlara dokunarak Türkçe anlamını ve örnek cümlesini görebilirsiniz.
+            Kartlara dokunarak Türkçe anlamını ve örnek cümlesini görebilir, sağ üstteki butonla sürekli yeni kelimeler getirebilirsiniz.
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {levelData.vocabList.map((item) => {
+            {visibleWords.map((item) => {
               const isFlipped = Boolean(flipped[item.id]);
               return (
                 <div
