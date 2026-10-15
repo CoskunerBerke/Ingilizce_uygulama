@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, Puzzle, BookOpen, CheckCircle2, UserSwitch } from 'lucide-react';
+import { Zap, Puzzle, BookOpen, CheckCircle2 } from 'lucide-react';
 import { CEFR_LEVELS } from './data/curriculumData';
 import Navbar from './components/Navbar';
 import VocabGameMode from './components/VocabGameMode';
