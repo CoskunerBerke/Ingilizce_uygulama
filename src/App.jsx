@@ -45,7 +45,6 @@ export default function App() {
     localStorage.setItem('lq_theme', theme);
   }, [theme]);
 
-  // Helper to update profile state and persist immediately
   const updateProfile = (updater) => {
     setProfile((prev) => {
       if (!prev) return prev;
@@ -150,156 +149,179 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
-      <Navbar
-        username={username}
-        onOpenUserModal={() => setUserModalOpen(true)}
-        xp={xp}
-        streak={streak}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        muted={muted}
-        onToggleMute={handleToggleMute}
-      />
+    <div className="relative min-h-screen text-slate-900 transition-colors duration-200 dark:text-slate-100">
+      {/* Full-Screen Moving Background Video */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="h-full w-full object-cover scale-105"
+        >
+          <source src="/bg-video.webm" type="video/webm" />
+          <source
+            src="https://upload.wikimedia.org/wikipedia/commons/transcoded/5/58/May_2024_aurora_timelapse_near_Calgary.webm/May_2024_aurora_timelapse_near_Calgary.webm.480p.vp9.webm"
+            type="video/webm"
+          />
+        </video>
+        {/* Adaptive Light / Dark Overlay so UI stays crisp while video moves in the background */}
+        <div className="absolute inset-0 bg-slate-100/65 backdrop-blur-[1px] transition-colors duration-300 dark:bg-slate-950/60" />
+      </div>
 
-      <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-7">
-        {/* User Resume Banner (Kaldığın Yerden Devam) */}
-        {username && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2.5 text-xs">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-              <div>
-                <span className="font-bold text-slate-900 dark:text-white">
-                  {username}
-                </span>{' '}
-                <span className="text-slate-500 dark:text-slate-400">
-                  olarak kaldığın yerden devam ediyorsun •{' '}
-                  <strong className="text-indigo-600 dark:text-indigo-400">
-                    {currentLevel.id} İlerlemesi: {solvedWordIdsForLevel.length}/60 Kelime •{' '}
-                    {solvedGrammarIdsForLevel.length} Gramer
-                  </strong>
+      {/* Content Layer */}
+      <div className="relative z-10">
+        <Navbar
+          username={username}
+          onOpenUserModal={() => setUserModalOpen(true)}
+          xp={xp}
+          streak={streak}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          muted={muted}
+          onToggleMute={handleToggleMute}
+        />
+
+        <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-7">
+          {/* User Resume Banner (Kaldığın Yerden Devam) */}
+          {username && (
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/80">
+              <div className="flex items-center gap-2.5 text-xs">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                <div>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {username}
+                  </span>{' '}
+                  <span className="text-slate-600 dark:text-slate-300">
+                    olarak kaldığın yerden devam ediyorsun •{' '}
+                    <strong className="text-indigo-600 dark:text-indigo-400">
+                      {currentLevel.id} İlerlemesi: {solvedWordIdsForLevel.length}/60 Kelime •{' '}
+                      {solvedGrammarIdsForLevel.length} Gramer
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex w-full items-center gap-3 sm:w-auto">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800 sm:w-24">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                    style={{ width: `${levelProgressPercent}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                  %{levelProgressPercent}
                 </span>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="h-2 flex-1 sm:w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-300"
-                  style={{ width: `${levelProgressPercent}%` }}
-                />
-              </div>
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                %{levelProgressPercent}
+          {/* 1. Clean Level Selector (A1 - C2) */}
+          <section className="mb-5">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 drop-shadow-sm dark:text-slate-300">
+                Seviye Seçin (A1 – C2)
+              </span>
+              <span className="rounded-lg bg-white/80 px-2.5 py-0.5 text-xs font-bold text-indigo-600 backdrop-blur-sm dark:bg-slate-900/80 dark:text-indigo-400">
+                {currentLevel.id} • {currentLevel.trName}
               </span>
             </div>
-          </div>
-        )}
 
-        {/* 1. Clean Level Selector (A1 - C2) */}
-        <section className="mb-5">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Seviye Seçin (A1 – C2)
-            </span>
-            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-              {currentLevel.id} • {currentLevel.trName}
-            </span>
-          </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {CEFR_LEVELS.map((lvl) => {
+                const active = lvl.id === currentLevel.id;
+                const lvlSolvedCount =
+                  profile?.solvedWordsByLevel?.[lvl.id]?.length || 0;
 
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {CEFR_LEVELS.map((lvl) => {
-              const active = lvl.id === currentLevel.id;
-              const lvlSolvedCount =
-                profile?.solvedWordsByLevel?.[lvl.id]?.length || 0;
-
-              return (
-                <button
-                  key={lvl.id}
-                  onClick={() => {
-                    sound.playClick();
-                    updateProfile({ selectedLevelId: lvl.id });
-                  }}
-                  className={`flex flex-col items-center justify-center rounded-2xl border py-2.5 px-2 text-center transition-all ${
-                    active
-                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm dark:border-indigo-500 dark:bg-indigo-600'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <span className="text-base font-extrabold leading-none sm:text-lg">
-                    {lvl.id}
-                  </span>
-                  <span
-                    className={`mt-1 truncate text-[10px] font-medium ${
-                      active ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'
+                return (
+                  <button
+                    key={lvl.id}
+                    onClick={() => {
+                      sound.playClick();
+                      updateProfile({ selectedLevelId: lvl.id });
+                    }}
+                    className={`flex flex-col items-center justify-center rounded-2xl border py-2.5 px-2 text-center backdrop-blur-md transition-all ${
+                      active
+                        ? 'border-indigo-500 bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
+                        : 'border-slate-200/80 bg-white/85 text-slate-800 hover:border-indigo-400 dark:border-slate-800/80 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:border-slate-700'
                     }`}
                   >
-                    {lvlSolvedCount > 0 ? `${lvlSolvedCount}/60` : lvl.trName.split(' ')[0]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                    <span className="text-base font-extrabold leading-none sm:text-lg">
+                      {lvl.id}
+                    </span>
+                    <span
+                      className={`mt-1 truncate text-[10px] font-medium ${
+                        active ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {lvlSolvedCount > 0 ? `${lvlSolvedCount}/60` : lvl.trName.split(' ')[0]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-        {/* 2. Simple 3-Tab Mode Selector */}
-        <section className="mb-5">
-          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    sound.playClick();
-                    updateProfile({ activeTab: tab.id });
-                  }}
-                  className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-xs font-bold transition-all sm:text-sm ${
-                    active
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+          {/* 2. Simple 3-Tab Mode Selector */}
+          <section className="mb-5">
+            <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200/80 bg-white/85 p-1.5 shadow-sm backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/80">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      sound.playClick();
+                      updateProfile({ activeTab: tab.id });
+                    }}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-xs font-bold transition-all sm:text-sm ${
+                      active
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-700 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:bg-slate-800/80'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-        {/* 3. Single Active Game / Study Card */}
-        <section>
-          {activeTab === 'vocab' && (
-            <VocabGameMode
-              levelData={currentLevel}
-              subMode={vocabSubMode}
-              onChangeSubMode={(m) => updateProfile({ vocabSubMode: m })}
-              solvedWordIds={solvedWordIdsForLevel}
-              onMarkWordSolved={handleMarkWordSolved}
-              onAddXp={handleAddXp}
-              onIncrementStreak={handleIncrementStreak}
-              onResetStreak={handleResetStreak}
-            />
-          )}
+          {/* 3. Single Active Game / Study Card */}
+          <section>
+            {activeTab === 'vocab' && (
+              <VocabGameMode
+                levelData={currentLevel}
+                subMode={vocabSubMode}
+                onChangeSubMode={(m) => updateProfile({ vocabSubMode: m })}
+                solvedWordIds={solvedWordIdsForLevel}
+                onMarkWordSolved={handleMarkWordSolved}
+                onAddXp={handleAddXp}
+                onIncrementStreak={handleIncrementStreak}
+                onResetStreak={handleResetStreak}
+              />
+            )}
 
-          {activeTab === 'grammar' && (
-            <GrammarDetectiveMode
-              levelData={currentLevel}
-              subMode={grammarSubMode}
-              onChangeSubMode={(m) => updateProfile({ grammarSubMode: m })}
-              solvedGrammarIds={solvedGrammarIdsForLevel}
-              onMarkGrammarSolved={handleMarkGrammarSolved}
-              onAddXp={handleAddXp}
-              onIncrementStreak={handleIncrementStreak}
-              onResetStreak={handleResetStreak}
-            />
-          )}
+            {activeTab === 'grammar' && (
+              <GrammarDetectiveMode
+                levelData={currentLevel}
+                subMode={grammarSubMode}
+                onChangeSubMode={(m) => updateProfile({ grammarSubMode: m })}
+                solvedGrammarIds={solvedGrammarIdsForLevel}
+                onMarkGrammarSolved={handleMarkGrammarSolved}
+                onAddXp={handleAddXp}
+                onIncrementStreak={handleIncrementStreak}
+                onResetStreak={handleResetStreak}
+              />
+            )}
 
-          {activeTab === 'study' && <StudyHubMode levelData={currentLevel} />}
-        </section>
-      </main>
+            {activeTab === 'study' && <StudyHubMode levelData={currentLevel} />}
+          </section>
+        </main>
+      </div>
 
       {/* Username Selection / Resume Modal */}
       <UserAuthModal

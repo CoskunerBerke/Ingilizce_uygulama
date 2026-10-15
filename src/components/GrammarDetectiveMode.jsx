@@ -218,7 +218,7 @@ export default function GrammarDetectiveMode({
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900 sm:p-7">
+    <div className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-xl backdrop-blur-xl transition-colors dark:border-slate-800/80 dark:bg-slate-900/80 sm:p-7">
       {/* Sub-Mode Toggle */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
