@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, Puzzle, BookOpen } from 'lucide-react';
+import { Zap, Puzzle, BookOpen, CheckCircle2, UserSwitch } from 'lucide-react';
 import { CEFR_LEVELS } from './data/curriculumData';
 import Navbar from './components/Navbar';
 import VocabGameMode from './components/VocabGameMode';
 import GrammarDetectiveMode from './components/GrammarDetectiveMode';
 import StudyHubMode from './components/StudyHubMode';
+import UserAuthModal from './components/UserAuthModal';
+import {
+  getActiveUsername,
+  setActiveUsername,
+  getOrCreateProfile,
+  saveProfile
+} from './utils/userStorage';
 import { sound } from './utils/sound';
 
 const TABS = [
-  { id: 'vocab', label: 'Kelime Oyunu', icon: Zap },
-  { id: 'grammar', label: 'Gramer Oyunu', icon: Puzzle },
+  { id: 'vocab', label: 'Kelime Oyunları', icon: Zap },
+  { id: 'grammar', label: 'Gramer Oyunları', icon: Puzzle },
   { id: 'study', label: 'Konu & Kartlar', icon: BookOpen }
 ];
 
@@ -20,13 +27,12 @@ export default function App() {
     return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  const [selectedLevelId, setSelectedLevelId] = useState(() => {
-    return localStorage.getItem('lq_level') || 'A1';
+  const [username, setUsername] = useState(() => getActiveUsername());
+  const [profile, setProfile] = useState(() => {
+    const activeUser = getActiveUsername();
+    return activeUser ? getOrCreateProfile(activeUser) : null;
   });
-
-  const [activeTab, setActiveTab] = useState('vocab');
-  const [xp, setXp] = useState(() => Number(localStorage.getItem('lq_xp')) || 0);
-  const [streak, setStreak] = useState(0);
+  const [userModalOpen, setUserModalOpen] = useState(() => !getActiveUsername());
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
@@ -39,16 +45,94 @@ export default function App() {
     localStorage.setItem('lq_theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    localStorage.setItem('lq_level', selectedLevelId);
-  }, [selectedLevelId]);
+  // Helper to update profile state and persist immediately
+  const updateProfile = (updater) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      saveProfile(next);
+      return next;
+    });
+  };
 
-  useEffect(() => {
-    localStorage.setItem('lq_xp', String(xp));
-  }, [xp]);
+  const handleSelectUser = (selectedName) => {
+    sound.playClick();
+    const loaded = getOrCreateProfile(selectedName);
+    setActiveUsername(loaded.username);
+    setUsername(loaded.username);
+    setProfile(loaded);
+    setUserModalOpen(false);
+  };
+
+  const selectedLevelId = profile?.selectedLevelId || 'A1';
+  const activeTab = profile?.activeTab || 'vocab';
+  const vocabSubMode = profile?.vocabSubMode || 'quiz';
+  const grammarSubMode = profile?.grammarSubMode || 'quiz';
+  const xp = profile?.xp || 0;
+  const streak = profile?.streak || 0;
 
   const currentLevel =
     CEFR_LEVELS.find((l) => l.id === selectedLevelId) || CEFR_LEVELS[0];
+
+  const solvedWordIdsForLevel =
+    profile?.solvedWordsByLevel?.[currentLevel.id] || [];
+  const solvedGrammarIdsForLevel =
+    profile?.solvedGrammarByLevel?.[currentLevel.id] || [];
+
+  const handleMarkWordSolved = (wordId) => {
+    updateProfile((prev) => {
+      const lvl = prev.selectedLevelId || 'A1';
+      const existing = prev.solvedWordsByLevel?.[lvl] || [];
+      if (existing.includes(wordId)) return prev;
+      return {
+        ...prev,
+        solvedWordsByLevel: {
+          ...(prev.solvedWordsByLevel || {}),
+          [lvl]: [...existing, wordId]
+        }
+      };
+    });
+  };
+
+  const handleMarkGrammarSolved = (grammarId) => {
+    updateProfile((prev) => {
+      const lvl = prev.selectedLevelId || 'A1';
+      const existing = prev.solvedGrammarByLevel?.[lvl] || [];
+      if (existing.includes(grammarId)) return prev;
+      return {
+        ...prev,
+        solvedGrammarByLevel: {
+          ...(prev.solvedGrammarByLevel || {}),
+          [lvl]: [...existing, grammarId]
+        }
+      };
+    });
+  };
+
+  const handleAddXp = (amount) => {
+    updateProfile((prev) => ({
+      ...prev,
+      xp: (prev.xp || 0) + amount
+    }));
+  };
+
+  const handleIncrementStreak = () => {
+    updateProfile((prev) => {
+      const nextStreak = (prev.streak || 0) + 1;
+      return {
+        ...prev,
+        streak: nextStreak,
+        bestStreak: Math.max(prev.bestStreak || 0, nextStreak)
+      };
+    });
+  };
+
+  const handleResetStreak = () => {
+    updateProfile((prev) => ({
+      ...prev,
+      streak: 0
+    }));
+  };
 
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -60,9 +144,16 @@ export default function App() {
     sound.muted = next;
   };
 
+  const levelProgressPercent = Math.min(
+    100,
+    Math.round((solvedWordIdsForLevel.length / 60) * 100)
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
       <Navbar
+        username={username}
+        onOpenUserModal={() => setUserModalOpen(true)}
         xp={xp}
         streak={streak}
         theme={theme}
@@ -71,10 +162,43 @@ export default function App() {
         onToggleMute={handleToggleMute}
       />
 
-      <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-7">
+        {/* User Resume Banner (Kaldığın Yerden Devam) */}
+        {username && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center gap-2.5 text-xs">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+              <div>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {username}
+                </span>{' '}
+                <span className="text-slate-500 dark:text-slate-400">
+                  olarak kaldığın yerden devam ediyorsun •{' '}
+                  <strong className="text-indigo-600 dark:text-indigo-400">
+                    {currentLevel.id} İlerlemesi: {solvedWordIdsForLevel.length}/60 Kelime •{' '}
+                    {solvedGrammarIdsForLevel.length} Gramer
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="h-2 flex-1 sm:w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                  style={{ width: `${levelProgressPercent}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                %{levelProgressPercent}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* 1. Clean Level Selector (A1 - C2) */}
-        <section className="mb-6">
-          <div className="mb-2.5 flex items-center justify-between">
+        <section className="mb-5">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Seviye Seçin (A1 – C2)
             </span>
@@ -86,12 +210,15 @@ export default function App() {
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {CEFR_LEVELS.map((lvl) => {
               const active = lvl.id === currentLevel.id;
+              const lvlSolvedCount =
+                profile?.solvedWordsByLevel?.[lvl.id]?.length || 0;
+
               return (
                 <button
                   key={lvl.id}
                   onClick={() => {
                     sound.playClick();
-                    setSelectedLevelId(lvl.id);
+                    updateProfile({ selectedLevelId: lvl.id });
                   }}
                   className={`flex flex-col items-center justify-center rounded-2xl border py-2.5 px-2 text-center transition-all ${
                     active
@@ -107,7 +234,7 @@ export default function App() {
                       active ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
-                    {lvl.trName.split(' ')[0]}
+                    {lvlSolvedCount > 0 ? `${lvlSolvedCount}/60` : lvl.trName.split(' ')[0]}
                   </span>
                 </button>
               );
@@ -126,7 +253,7 @@ export default function App() {
                   key={tab.id}
                   onClick={() => {
                     sound.playClick();
-                    setActiveTab(tab.id);
+                    updateProfile({ activeTab: tab.id });
                   }}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-xs font-bold transition-all sm:text-sm ${
                     active
@@ -147,24 +274,42 @@ export default function App() {
           {activeTab === 'vocab' && (
             <VocabGameMode
               levelData={currentLevel}
-              onAddXp={(val) => setXp((p) => p + val)}
-              onIncrementStreak={() => setStreak((s) => s + 1)}
-              onResetStreak={() => setStreak(0)}
+              subMode={vocabSubMode}
+              onChangeSubMode={(m) => updateProfile({ vocabSubMode: m })}
+              solvedWordIds={solvedWordIdsForLevel}
+              onMarkWordSolved={handleMarkWordSolved}
+              onAddXp={handleAddXp}
+              onIncrementStreak={handleIncrementStreak}
+              onResetStreak={handleResetStreak}
             />
           )}
 
           {activeTab === 'grammar' && (
             <GrammarDetectiveMode
               levelData={currentLevel}
-              onAddXp={(val) => setXp((p) => p + val)}
-              onIncrementStreak={() => setStreak((s) => s + 1)}
-              onResetStreak={() => setStreak(0)}
+              subMode={grammarSubMode}
+              onChangeSubMode={(m) => updateProfile({ grammarSubMode: m })}
+              solvedGrammarIds={solvedGrammarIdsForLevel}
+              onMarkGrammarSolved={handleMarkGrammarSolved}
+              onAddXp={handleAddXp}
+              onIncrementStreak={handleIncrementStreak}
+              onResetStreak={handleResetStreak}
             />
           )}
 
           {activeTab === 'study' && <StudyHubMode levelData={currentLevel} />}
         </section>
       </main>
+
+      {/* Username Selection / Resume Modal */}
+      <UserAuthModal
+        isOpen={userModalOpen}
+        currentUsername={username}
+        onSelectUser={handleSelectUser}
+        onClose={() => {
+          if (username) setUserModalOpen(false);
+        }}
+      />
     </div>
   );
 }
