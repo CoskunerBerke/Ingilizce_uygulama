@@ -35,9 +35,9 @@ export default function App() {
   const [userModalOpen, setUserModalOpen] = useState(() => !getActiveUsername());
   const [muted, setMuted] = useState(false);
 
-  // Wrong Answer Sticker Popup State
-  const [wrongStickerKey, setWrongStickerKey] = useState(0);
-  const [showWrongSticker, setShowWrongSticker] = useState(false);
+  // Sticker Popup State: null | 'correct' | 'wrong'
+  const [stickerState, setStickerState] = useState(null);
+  const [stickerKey, setStickerKey] = useState(0);
   const stickerTimerRef = useRef(null);
 
   useEffect(() => {
@@ -49,6 +49,15 @@ export default function App() {
     }
     localStorage.setItem('lq_theme', theme);
   }, [theme]);
+
+  const triggerSticker = (type, durationMs = 2000) => {
+    if (stickerTimerRef.current) clearTimeout(stickerTimerRef.current);
+    setStickerKey((k) => k + 1);
+    setStickerState(type);
+    stickerTimerRef.current = setTimeout(() => {
+      setStickerState(null);
+    }, durationMs);
+  };
 
   const updateProfile = (updater) => {
     setProfile((prev) => {
@@ -121,8 +130,9 @@ export default function App() {
   };
 
   const handleIncrementStreak = () => {
-    if (stickerTimerRef.current) clearTimeout(stickerTimerRef.current);
-    setShowWrongSticker(false);
+    // Show the heart-hands sticker on any correct answer!
+    triggerSticker('correct', 1900);
+
     updateProfile((prev) => {
       const nextStreak = (prev.streak || 0) + 1;
       return {
@@ -134,13 +144,8 @@ export default function App() {
   };
 
   const handleResetStreak = () => {
-    // Trigger the "Bombastik side eye" sticker popup on any wrong answer!
-    if (stickerTimerRef.current) clearTimeout(stickerTimerRef.current);
-    setWrongStickerKey((k) => k + 1);
-    setShowWrongSticker(true);
-    stickerTimerRef.current = setTimeout(() => {
-      setShowWrongSticker(false);
-    }, 2400);
+    // Show the "Bombastik side eye" sticker on any wrong answer!
+    triggerSticker('wrong', 2300);
 
     updateProfile((prev) => ({
       ...prev,
@@ -184,21 +189,29 @@ export default function App() {
         <div className="absolute inset-0 bg-slate-100/65 backdrop-blur-[1px] transition-colors duration-300 dark:bg-slate-950/60" />
       </div>
 
-      {/* Wrong Answer Sticker Overlay ("Bombastik side eye") */}
-      {showWrongSticker && (
+      {/* Correct / Wrong Answer Sticker Overlay */}
+      {stickerState && (
         <div
-          key={wrongStickerKey}
-          onClick={() => setShowWrongSticker(false)}
+          key={stickerKey}
+          onClick={() => setStickerState(null)}
           className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]"
         >
           <div className="animate-pop flex flex-col items-center">
             <img
-              src="/wrong-sticker.png"
-              alt="Bombastik side eye"
-              className="h-64 w-auto object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.55)] sm:h-80 animate-shake"
+              src={stickerState === 'correct' ? '/correct-sticker.png' : '/wrong-sticker.png'}
+              alt={stickerState === 'correct' ? 'Doğru Cevap Sticker' : 'Bombastik side eye'}
+              className={`h-64 w-auto object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.55)] sm:h-80 ${
+                stickerState === 'wrong' ? 'animate-shake' : ''
+              }`}
             />
-            <span className="mt-2 rounded-full bg-rose-600/95 px-4 py-1.5 text-xs font-extrabold text-white shadow-lg">
-              Yanlış Cevap! (Kapatmak için dokun)
+            <span
+              className={`mt-2 rounded-full px-4 py-1.5 text-xs font-extrabold text-white shadow-lg ${
+                stickerState === 'correct' ? 'bg-emerald-600/95' : 'bg-rose-600/95'
+              }`}
+            >
+              {stickerState === 'correct'
+                ? 'Harika! Doğru Cevap! 🫶 (Geçmek için dokun)'
+                : 'Yanlış Cevap! 👀 (Kapatmak için dokun)'}
             </span>
           </div>
         </div>
