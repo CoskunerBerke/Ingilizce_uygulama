@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Zap, Puzzle, BookOpen, CheckCircle2 } from 'lucide-react';
 import { CEFR_LEVELS } from './data/curriculumData';
 import Navbar from './components/Navbar';
@@ -34,6 +34,11 @@ export default function App() {
   });
   const [userModalOpen, setUserModalOpen] = useState(() => !getActiveUsername());
   const [muted, setMuted] = useState(false);
+
+  // Wrong Answer Sticker Popup State
+  const [wrongStickerKey, setWrongStickerKey] = useState(0);
+  const [showWrongSticker, setShowWrongSticker] = useState(false);
+  const stickerTimerRef = useRef(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -116,6 +121,8 @@ export default function App() {
   };
 
   const handleIncrementStreak = () => {
+    if (stickerTimerRef.current) clearTimeout(stickerTimerRef.current);
+    setShowWrongSticker(false);
     updateProfile((prev) => {
       const nextStreak = (prev.streak || 0) + 1;
       return {
@@ -127,6 +134,14 @@ export default function App() {
   };
 
   const handleResetStreak = () => {
+    // Trigger the "Bombastik side eye" sticker popup on any wrong answer!
+    if (stickerTimerRef.current) clearTimeout(stickerTimerRef.current);
+    setWrongStickerKey((k) => k + 1);
+    setShowWrongSticker(true);
+    stickerTimerRef.current = setTimeout(() => {
+      setShowWrongSticker(false);
+    }, 2400);
+
     updateProfile((prev) => ({
       ...prev,
       streak: 0
@@ -166,9 +181,28 @@ export default function App() {
             type="video/webm"
           />
         </video>
-        {/* Adaptive Light / Dark Overlay so UI stays crisp while video moves in the background */}
         <div className="absolute inset-0 bg-slate-100/65 backdrop-blur-[1px] transition-colors duration-300 dark:bg-slate-950/60" />
       </div>
+
+      {/* Wrong Answer Sticker Overlay ("Bombastik side eye") */}
+      {showWrongSticker && (
+        <div
+          key={wrongStickerKey}
+          onClick={() => setShowWrongSticker(false)}
+          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]"
+        >
+          <div className="animate-pop flex flex-col items-center">
+            <img
+              src="/wrong-sticker.png"
+              alt="Bombastik side eye"
+              className="h-64 w-auto object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.55)] sm:h-80 animate-shake"
+            />
+            <span className="mt-2 rounded-full bg-rose-600/95 px-4 py-1.5 text-xs font-extrabold text-white shadow-lg">
+              Yanlış Cevap! (Kapatmak için dokun)
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Content Layer */}
       <div className="relative z-10">
